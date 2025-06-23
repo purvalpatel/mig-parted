@@ -24,62 +24,21 @@ As an example, consider the following configuration for an NVIDIA DGX-A100 node
 ```
 version: v1
 mig-configs:
-  all-disabled:
-    - devices: all
-      mig-enabled: false
-
-  all-enabled:
-    - devices: all
-      mig-enabled: true
-      mig-devices: {}
-
-  all-1g.5gb:
-    - devices: all
-      mig-enabled: true
-      mig-devices:
-        "1g.5gb": 7
-
-  all-2g.10gb:
-    - devices: all
-      mig-enabled: true
-      mig-devices:
-        "2g.10gb": 3
-
-  all-3g.20gb:
-    - devices: all
-      mig-enabled: true
-      mig-devices:
-        "3g.20gb": 2
-
-  all-balanced:
-    - devices: all
-      mig-enabled: true
-      mig-devices:
-        "1g.5gb": 2
-        "2g.10gb": 1
-        "3g.20gb": 1
-
-  custom-config:
-    - devices: [0,1,2,3]
-      mig-enabled: false
-    - devices: [4]
-      mig-enabled: true
-      mig-devices:
-        "1g.5gb": 7
-    - devices: [5]
-      mig-enabled: true
-      mig-devices:
-        "2g.10gb": 3
-    - devices: [6]
-      mig-enabled: true
-      mig-devices:
-        "3g.20gb": 2
-    - devices: [7]
-      mig-enabled: true
-      mig-devices:
-        "1g.5gb": 2
-        "2g.10gb": 1
-        "3g.20gb": 1
+  - devices: [0]
+    mig-enabled: true
+    mig-devices:
+      1c.3g.71gb: 1
+      1g.18gb: 4
+      2c.3g.71gb: 1
+  - devices: [1, 2, 3, 4, 5, 6]
+    mig-enabled: false
+    mig-devices: {}
+  - devices: [7]
+    mig-enabled: true
+    mig-devices:
+      1c.3g.71gb: 1
+      1g.18gb: 3
+      2c.3g.71gb: 1
 ```
 Each of the sections under `mig-configs` is user-defined, with custom labels
 used to refer to them. For example, the `all-disabled` label refers to the MIG
@@ -89,15 +48,15 @@ node into `1g.5gb` devices. Finally, the `custom-config` label defines a
 completely custom configuration which disables MIG on the first 4 GPUs on the
 node, and applies a mix of MIG devices across the rest.
 
+Verify the configuration is proper or not ?
+```
+$ nvidia-mig-parted assert -f examples/config.yaml
+```
 Using this tool the following commands can be run to apply each of these
 configs, in turn:
 ```
-$ nvidia-mig-parted apply -f examples/config.yaml -c all-disabled
-$ nvidia-mig-parted apply -f examples/config.yaml -c all-1g.5gb
-$ nvidia-mig-parted apply -f examples/config.yaml -c all-2g.10gb
-$ nvidia-mig-parted apply -f examples/config.yaml -c all-3g.20gb
-$ nvidia-mig-parted apply -f examples/config.yaml -c all-balanced
-$ nvidia-mig-parted apply -f examples/config.yaml -c custom-config
+$ nvidia-mig-parted apply -f examples/config.yaml
+
 ```
 
 The currently applied configuration can then be looked up with:
@@ -128,7 +87,13 @@ ERRO[0000] Assertion failure: selected configuration not currently applied
 $ echo $?
 1
 ```
+Save this configuration with export. and set the command on reboot.
+So all the GPU instances will be created with the same UUID.
 
+you can check it with:
+```
+$ nvidia-smi -L
+```
 **Note:** The `nvidia-mig-parted` tool alone does not take care of making sure
 that your node is in a state where MIG mode changes and MIG device
 configurations will apply cleanly. Moreover, it does not ensure that MIG device
